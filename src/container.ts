@@ -1,11 +1,12 @@
-export type Type = { new (...args: any[]): any };
+export type DependencyType = { new (...args: any[]): any };
+export type DependencyName = string | symbol;
+type PropertyKey = string | symbol;
 
-/** @internal */
 export class Container {
-    private instances: Map<string, any> = new Map<string, any>();
-    private types: Map<string, Type> = new Map<string, Type>();
+    private instances: Map<DependencyName, any> = new Map();
+    private types: Map<DependencyName, DependencyType> = new Map();
 
-    public add(type: Type, name?: string): void {
+    public add(type: DependencyType, name?: DependencyName): void {
         if (!name && !type.prototype.__ioc__injectable) {
             throw new Error(`Type ${type.name} is not injectable`);
         }
@@ -13,19 +14,19 @@ export class Container {
         this.types.set(name ?? type.prototype.__ioc__injectable, type);
     }
 
-    public get<T>(name: string): T {
+    public get<T>(name: DependencyName): T {
         if (!this.instances.has(name)) {
             const type = this.types.get(name);
-            if (!type) throw new Error(`${name} is not a valid type`);
+            if (!type) throw new Error(`${name.toString()} is not a valid type`);
 
             // constructor params
             const instance = new type(
-                ...(type.prototype.__ioc__inject_constructor ?? []).map((inject: string) => this.get(inject)),
+                ...(type.prototype.__ioc__inject_constructor ?? []).map((inject: DependencyName) => this.get(inject)),
             );
 
             // class props
             (type.prototype.__ioc__inject_prop ?? []).forEach(
-                ([prop, dependency]: [string, string]) => (instance[prop] = this.get(dependency)),
+                ([prop, dependency]: [PropertyKey, DependencyName]) => (instance[prop] = this.get(dependency)),
             );
 
             this.instances.set(name, instance);
@@ -35,20 +36,20 @@ export class Container {
     }
 }
 
-export function injectable(name: string) {
-    return function (target: Type) {
+export function injectable(name: DependencyName) {
+    return function (target: DependencyType) {
         if (!target.prototype.__ioc__injectable) target.prototype.__ioc__injectable = name;
     };
 }
 
-export function inject(name: string) {
-    return function (target: any, propertyKey: string | symbol, parameterIndex?: number) {
+export function inject(name: DependencyName) {
+    return function (target: any, propertyKey: PropertyKey, parameterIndex?: number) {
         if (parameterIndex !== undefined) {
             // constructor param
             if (!target.prototype.__ioc__inject_constructor) target.prototype.__ioc__inject_constructor = [];
             target.prototype.__ioc__inject_constructor[parameterIndex] = name;
         } else if (propertyKey !== undefined) {
-            // class property
+            // class prop
             if (!target.constructor.prototype.__ioc__inject_prop) target.constructor.prototype.__ioc__inject_prop = [];
             target.constructor.prototype.__ioc__inject_prop.push([propertyKey, name]);
         }
