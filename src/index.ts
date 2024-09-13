@@ -34,7 +34,6 @@ class SystemB implements System {
     }
 }
 
-@injectable(types.SystemC)
 class SystemC implements System {
     private name: string = "SystemC";
 
@@ -62,7 +61,7 @@ const container = new Container();
 
 container.add(SystemA);
 container.add(SystemB);
-container.add(SystemC);
+container.add(SystemC, types.SystemC);
 container.add(SystemD);
 
 console.log(container.get<System>(types.SystemB).getNames());
