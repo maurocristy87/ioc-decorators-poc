@@ -1,10 +1,17 @@
 import { Container, inject, injectable } from "./container";
 
+const types = {
+    SystemA: Symbol.for("SystemA"),
+    SystemB: Symbol.for("SystemB"),
+    SystemC: Symbol.for("SystemC"),
+    SystemD: Symbol.for("SystemD"),
+};
+
 interface System {
     getNames(): string;
 }
 
-@injectable("SystemA")
+@injectable(types.SystemA)
 class SystemA implements System {
     private name: string = "SystemA";
 
@@ -13,12 +20,12 @@ class SystemA implements System {
     }
 }
 
-@injectable("SystemB")
+@injectable(types.SystemB)
 class SystemB implements System {
     private systemA: SystemA;
     private name: string = "SystemB";
 
-    constructor(@inject("SystemA") systemA: SystemA) {
+    constructor(@inject(types.SystemA) systemA: SystemA) {
         this.systemA = systemA;
     }
 
@@ -27,7 +34,7 @@ class SystemB implements System {
     }
 }
 
-@injectable("SystemC")
+@injectable(types.SystemC)
 class SystemC implements System {
     private name: string = "SystemC";
 
@@ -36,13 +43,13 @@ class SystemC implements System {
     }
 }
 
-@injectable("SystemD")
+@injectable(types.SystemD)
 class SystemD implements System {
-    @inject("SystemB") private systemB: SystemB;
+    @inject(types.SystemB) private systemB: SystemB;
     private systemC: SystemC;
     private name: string = "SystemD";
 
-    constructor(@inject("SystemC") systemC: SystemC) {
+    constructor(@inject(types.SystemC) systemC: SystemC) {
         this.systemC = systemC;
     }
 
@@ -58,5 +65,5 @@ container.add(SystemB);
 container.add(SystemC);
 container.add(SystemD);
 
-console.log(container.get<System>("SystemB").getNames());
-console.log(container.get<System>("SystemD").getNames());
+console.log(container.get<System>(types.SystemB).getNames());
+console.log(container.get<System>(types.SystemD).getNames());
